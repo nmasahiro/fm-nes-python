@@ -1,4 +1,5 @@
 import numpy as np
+import math
 
 class SphereFunction(object):
     """
@@ -143,10 +144,12 @@ class EllipsoidFunction(object):
         float
             evaluation value
         """
-        if len(x) < 2:
-            raise ValueError('dimension must be greater one')
-        #return np.sum([(1000**(i / (self.n-1)) * x[i])**2 for i in range(self.n)])
-        return np.sum((self.aratio * x)**2)
+        val = 0.
+        for i in range(self.n):
+            val += 1000.**(i/(self.n-1.)) * x[i] * 1000.**(i/(self.n-1.)) * x[i]
+        return val
+        # return np.sum([(1000**(i / (self.n-1)) * x[i])**2 for i in range(self.n)])
+        # return np.sum((self.aratio * x)**2)
 
     def get_optimal_solution(self):
         """
@@ -158,6 +161,16 @@ class EllipsoidFunction(object):
             optimal solution.
         """
         return np.zeros([self.n, 1])
+
+class ConstraintSphereFunction(object):
+    def __init__(self, n):
+        self.n = n
+        self.name = "%dD-ConstraintSphereFunction" % n
+    def evaluate(self, x):
+        if len(list(filter(lambda a: a < 0., x))) >= 1:
+            return math.inf
+        else:
+            return np.sum(x**2)
 
 
 class RosenbrockChainFunction(object):

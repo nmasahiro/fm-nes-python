@@ -23,7 +23,7 @@ class RealSolution(object):
 def get_h_inv(dim):
     f = lambda a,b: ((1. + a*a)*math.exp(a*a/2.) / 0.24) - 10. - dim
     fprime = lambda a: (1. / 0.24) * a * math.exp(a*a/2.) * (3. + a*a)
-    h_inv = 1.0
+    h_inv = 5.0
     while (abs(f(h_inv, dim)) > 1e-10):
         h_inv = h_inv - 0.5 * (f(h_inv, dim) / fprime(h_inv))
     return h_inv

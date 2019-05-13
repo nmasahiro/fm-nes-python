@@ -100,7 +100,8 @@ def main(path, **params):
         solutions = sorted(solutions, key=functools.cmp_to_key(comparator)) 
 
         best = solutions[0].f
-        print("best:", best)
+        if g % 100 == 0:
+            print("best:", best)
 
         if solutions[0].f < params['criterion']:
             # print(no_of_evals, solutions[0].f)
@@ -137,7 +138,7 @@ def main(path, **params):
 
         # eiadx-nes
         BBt = B.dot(B.T)
-        e, v = np.linalg.eig(BBt)
+        e, v = np.linalg.eigh(BBt)
         tau_vec = [np.dot(np.dot(v[:,i].reshape(1,dim), A), v[:,i].reshape(dim,1))/np.dot(np.dot(v[:,i].reshape(1,dim), BBt), v[:,i].reshape(dim,1)) - 1. for i in range(dim)]
         tau_flag = [1. if tau_vec[i] > 0 else 0. for i in range(dim)]
         tau = max(tau_vec)
@@ -172,10 +173,10 @@ if __name__ == '__main__':
     params['lamb'] = 16
     params['max_evals'] = int(5 * params['dim'] * 1e5)
     params['criterion'] = 1e-12
-    # params['obj_func_name'] = 'function.EllipsoidFunction'
+    params['obj_func_name'] = 'function.EllipsoidFunction'
     # params['obj_func_name'] = 'function.RosenbrockChainFunction'
     # params['obj_func_name'] = 'function.RastriginFunction'
-    params['obj_func_name'] = 'function.ConstraintSphereFunction'
+    # params['obj_func_name'] = 'function.ConstraintSphereFunction'
     func = load_class(params['obj_func_name'])
     obj_func = func(params['dim'])
     path = 'log/' + obj_func.name + '_' + datetime.datetime.now().strftime('%Y-%m-%d-%H-%M')
@@ -187,7 +188,7 @@ if __name__ == '__main__':
     f.close()
 
     # params['mean'] = np.zeros([params['dim'], 1])
-    params['mean'] = 10. * np.ones([params['dim'], 1])
+    params['mean'] = 3. * np.ones([params['dim'], 1])
     params['sigma'] = 2.0
     params['B'] = np.eye(params['dim'], dtype=float)
     params['obj_func'] = obj_func

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-import function
+import functions
 import random, pickle, json
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
@@ -14,11 +14,13 @@ from scipy.linalg import expm
 from functools import reduce
 import functools
 
+
 class RealSolution(object):
     def __init__(self, **params):
         self.f = float('nan')
         self.x = np.zeros([params['dim'], 1])
         self.z = np.zeros([params['dim'], 1])
+
 
 def get_h_inv(dim):
     f = lambda a,b: ((1. + a*a)*math.exp(a*a/2.) / 0.24) - 10. - dim
@@ -27,6 +29,7 @@ def get_h_inv(dim):
     while (abs(f(h_inv, dim)) > 1e-10):
         h_inv = h_inv - 0.5 * (f(h_inv, dim) / fprime(h_inv))
     return h_inv
+
 
 def comparator(a, b):
     sgn = 0
@@ -48,14 +51,46 @@ def comparator(a, b):
         return sgn
 
 
+def init_log(dim):
+    log = {}
+    log['g'] = []
+    log['evals'] = []
+    log['fval'] = []
+    for i in range(dim):
+        log['m%d' % i] = []
+        log['eig%d' % i] = []
+    log['stepsize'] = []
+    log['norm_ps'] = []
+    log['ratio_feasible'] = []
+    log['gamma'] = []
+    return log
+
+
+def log_generation(log, dim, g, evals, fval, m, sigma, B, ps, ratio_feasible, gamma):
+    log['g'].append(g)
+    log['evals'].append(evals)
+    log['fval'].append(fval)
+    D = np.linalg.eigvalsh(sigma**2 * B.dot(B.T))
+    D = np.sqrt(D)
+    for i in range(dim):
+        log['m%d' % i].append(m[i, 0])
+        log['eig%d' % i].append(D[i])
+    log['stepsize'].append(sigma)
+    log['norm_ps'].append(np.linalg.norm(ps))
+    log['ratio_feasible'].append(ratio_feasible)
+    log['gamma'].append(gamma)
+    return
+
+
 def main(path, **params):
     obj_func = params['obj_func']
-    dim   = params['dim']
-    lamb  = params['lamb']
-    m     = params['mean']
+    dim = params['dim']
+    lamb = params['lamb']
+    m = params['m']
+    m = np.array([m] * dim).reshape(dim, 1)
     sigma = params['sigma']
-    B = params['B']
-    eta_m = params['eta_m']
+    B = np.eye(params['dim'], dtype=float)
+    eta_m = 1.0
     weights_rank_hat = np.array([max(0., math.log(lamb/2. + 1.) - math.log(i+1)) for i in range(lamb)])
     weights_rank = weights_rank_hat / sum(weights_rank_hat) - 1./lamb
     mueff = 1 / np.sum((weights_rank + 1./lamb)**2, axis=0)
@@ -81,11 +116,14 @@ def main(path, **params):
     dGamma = min(1., float(dim)/lamb)
     gamma = 1.
 
-    no_of_evals = 0
+    # log
+    log = init_log(dim)
+
+    evals = 0
     g = 0
 
     solutions = [RealSolution(**params) for i in range(lamb)]
-    while no_of_evals < params['max_evals']:
+    while evals < params['max_evals']:
         g += 1
 
         for i in range(int(lamb/2)):
@@ -93,21 +131,24 @@ def main(path, **params):
             solutions[2*i+1].z = -solutions[2*i].z.copy()
             solutions[2*i].x = m + sigma * B.dot(solutions[2*i].z)
             solutions[2*i+1].x = m + sigma * B.dot(solutions[2*i+1].z)
-            solutions[2*i].f = obj_func.evaluate(solutions[2*i].x)
-            solutions[2*i+1].f = obj_func.evaluate(solutions[2*i+1].x)
-        no_of_evals += lamb
+            solutions[2*i].f = obj_func(solutions[2*i].x)
+            solutions[2*i+1].f = obj_func(solutions[2*i+1].x)
+        evals += lamb
 
         solutions = sorted(solutions, key=functools.cmp_to_key(comparator)) 
 
         best = solutions[0].f
         if g % 100 == 0:
-            print("best:", best)
+            print("evals:{}, best:{}".format(evals, best))
 
         if solutions[0].f < params['criterion']:
-            # print(no_of_evals, solutions[0].f)
+            # print(evals, solutions[0].f)
             break
 
         lambF = len([solutions[i].x for i in range(lamb) if solutions[i].f < sys.maxsize])
+
+        # log generation
+        log_generation(log, dim, g, evals, best, m, sigma, B, ps, lambF/lamb, gamma)
 
         # evolution path p_sigma
         wz = np.sum([weights_rank[i]*solutions[i].z for i in range(lamb)], axis=0)
@@ -162,37 +203,81 @@ def main(path, **params):
         e, v = np.linalg.eigh(A)
         B = np.dot(v.dot(np.diag(list(map(lambda a: math.sqrt(a), e)))), v.T)
 
-    print(no_of_evals, solutions[0].f, params['seed'])
+    print(evals, solutions[0].f, params['seed'])
+    df = pd.DataFrame(log)
+    df.index.name = '#index'
+    df.to_csv('%s/log.csv' % path, sep=',')
+    df.to_csv('./log.csv', sep=',')
+
+
+def get_params():
+    # f = open('./experimentProperties.txt')
+    f = open('./experimentProperties.txt')
+    lines = f.readlines()  # 1行毎にファイル終端まで全て読む(改行文字も含まれる)
+    f.close()
+
+    params = {}
+    params['dim'] = int(lines[2].rstrip('\n').split('=')[1])
+    params['lamb'] = int(lines[3].rstrip('\n').split('=')[1])
+    params['m'] = float(lines[4].rstrip('\n').split('=')[1])
+    params['sigma'] = float(lines[5].rstrip('\n').split('=')[1])
+    params['func_name'] = str(lines[6].rstrip('\n').split('=')[1].strip(' '))
+    params['seed'] = int(lines[7].rstrip('\n').split('=')[1])
+
+    return params
+
 
 if __name__ == '__main__':
-    params = {}
-    #params['seed'] = random.randint(0, 2**32 - 1)
-    params['seed'] = 4046532
+    params = get_params()
+    if params['seed'] <= 0:
+        params['seed'] = - params['seed']
     np.random.seed(params['seed'])
-    params['dim'] = 40
-    params['lamb'] = 16
+
+    # function
+    func_name = params['func_name']
+    if func_name == 'Sphere':
+        obj_func = functions.sphere
+    elif func_name == 'KTablet':
+        obj_func = functions.ktablet
+    elif func_name == 'Ellipsoid':
+        obj_func = functions.ellipsoid
+    elif func_name == 'RosenbrockChain':
+        obj_func = functions.rosenbrockchain
+    elif func_name == 'ConstraintSphere':
+        obj_func = functions.const_sphere
+    elif func_name == 'ConstraintKTablet':
+        obj_func = functions.const_ktablet
+    elif func_name == 'ConstraintRosenbrockChain':
+        obj_func = functions.const_rosen
+    elif func_name == 'Rastrigin':
+        obj_func = functions.rastrigin
+    elif func_name == 'OneTablet':
+        obj_func = functions.one_tablet
+    elif func_name == 'Cigar':
+        obj_func = functions.cigar
+    elif func_name == 'ConstraintEllipsoid':
+        obj_func = functions.const_ellipsoid
+    elif func_name == 'Ackley':
+        obj_func = functions.ackley
+    elif func_name == 'Bohachevsky':
+        obj_func = functions.bohachevsky
+    elif func_name == 'Schaffer':
+        obj_func = functions.schaffer
+    else:
+        print("function error. exit.")
+        sys.exit(1)
+
     params['max_evals'] = int(5 * params['dim'] * 1e5)
     params['criterion'] = 1e-12
-    params['obj_func_name'] = 'function.EllipsoidFunction'
-    # params['obj_func_name'] = 'function.RosenbrockChainFunction'
-    # params['obj_func_name'] = 'function.RastriginFunction'
-    # params['obj_func_name'] = 'function.ConstraintSphereFunction'
-    func = load_class(params['obj_func_name'])
-    obj_func = func(params['dim'])
-    path = 'log/' + obj_func.name + '_' + datetime.datetime.now().strftime('%Y-%m-%d-%H-%M')
+
+    path = 'log/' + func_name + '_' + datetime.datetime.now().strftime('%Y-%m-%d-%H-%M')
     if not os.path.isdir(path):
         os.makedirs(path)
     print('create directory which is ' + path)
     f = open('%s/params_setting.json' % path, 'w')
     json.dump(params, f)
     f.close()
-
-    # params['mean'] = np.zeros([params['dim'], 1])
-    params['mean'] = 3. * np.ones([params['dim'], 1])
-    params['sigma'] = 2.0
-    params['B'] = np.eye(params['dim'], dtype=float)
     params['obj_func'] = obj_func
-    params['eta_m'] = 1.0
 
     start = time.time()
     main(path, **params)

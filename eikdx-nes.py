@@ -95,11 +95,8 @@ def main(path, **params):
     weights_rank = weights_rank_hat / sum(weights_rank_hat) - 1./lamb
     mueff = 1 / np.sum((weights_rank + 1./lamb)**2, axis=0)
     cs = (mueff + 2.) / (dim + mueff + 5.)
-    cc = (4.+mueff/dim) / (dim+4.+2.*mueff/dim)
-    c1_cma = 2. / (math.pow(dim+1.3,2) + mueff)
     # initialization
     chiN = np.sqrt(dim)*(1.-1./(4.*dim)+1./(21.*dim*dim))
-    pc = np.zeros([dim, 1])
     ps = np.zeros([dim, 1])
     # distance weight parameter
     h_inv = get_h_inv(dim)
@@ -109,7 +106,6 @@ def main(path, **params):
     eta_move_sigma = 1.
     eta_stag_sigma = lambda lambF: math.tanh((0.024*lambF + 0.7*dim + 20.)/(dim + 12.))
     eta_conv_sigma = lambda lambF: 2. * math.tanh((0.025*lambF + 0.75*dim + 10.)/(dim + 4.))
-    c1 = lambda lambF: 2. / (math.pow(dim + 1.3, 2.) + mueff) * (float(lambF)/lamb)
     eta_B = lambda lambF: 120.*dim / (47.*dim*dim + 6400.) * math.tanh(0.02 * lambF)
     # eiadx-nes
     cGamma = 1. / (3.*(dim-1.))
@@ -150,7 +146,6 @@ def main(path, **params):
         lambF = len([solutions[i].x for i in range(lamb) if solutions[i].f < sys.maxsize])
 
         # log generation
-        print("ratio:{}".format(lambF/lamb))
         log_generation(log, dim, g, evals, best, m, sigma, B, ps, lambF/lamb, gamma)
 
         # evolution path p_sigma
@@ -174,15 +169,12 @@ def main(path, **params):
 
         eta_m = 1.0 if ps_init_flag else 0.0
         m += eta_m * sigma * np.dot(B, G_delta)
-        pc = (1.-cc) * pc + np.sqrt(cc * (2.-cc) * mueff) * B.dot(G_delta)
         if ps_init_flag is False and np.linalg.norm(ps) >= chiN:
             print("flag changed!")
             ps_init_flag = True
             ps = np.zeros([dim, 1])
-            pc = np.zeros([dim, 1])
 
-        lsig = 1.0 if G_sigma < 0. and ps_norm >= chiN else 0.0
-        sigma *= math.exp((1.-lsig) * (eta_sigma/2.) * G_sigma)
+        sigma *= math.exp((eta_sigma/2.) * G_sigma)
 
         A = np.dot(B.dot(expm(eta_B(lambF) * G_B)), B.T)
 
@@ -198,15 +190,6 @@ def main(path, **params):
         stepsizeQ = math.pow(np.linalg.det(Q), 1./dim)
         sigma *= stepsizeQ
         A = np.dot(np.dot(Q, A), Q) / math.pow(stepsizeQ, 2.)
-
-        lc = 1. if ps_norm >= chiN else 0.
-        A += lc * c1(lambF) * (pc.dot(pc.T) - BBt)
-        if not (math.isnan(np.linalg.det(A)) or np.linalg.det(A) <= 0):
-            A /= math.pow(np.linalg.det(A), 1./dim)
-        else:
-            print("determinant error;")
-            print("det:", np.linalg.det(A))
-            sys.exit(0)
 
         # eigenvalue decomposition
         e, v = np.linalg.eigh(A)

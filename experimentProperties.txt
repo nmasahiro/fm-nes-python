@@ -5,4 +5,5 @@ lambda = 80
 initialM = 10.0
 sigma = 2.0
 Function = ConstraintKTablet
-RandomSeed = -59704
+RandomSeed = 544722
+

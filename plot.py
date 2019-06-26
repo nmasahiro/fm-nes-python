@@ -11,12 +11,11 @@ import cv2
 
 params = {}
 dim = 40
-params['graph_end'] = 240000
-# params['graph_end'] = 220000
+# params['graph_end'] = 240000
+params['graph_end'] = 250000
 
 def plot_fval(df, path, save=True):
     plt.figure()
-    plt.title('%s/eval' % path)
     df.plot(kind='line', x='evals', y='fval')
     plt.xlim([0, params['graph_end']])
 
@@ -34,36 +33,9 @@ def plot_fval(df, path, save=True):
     else:
         plt.show()
 
-def plot_mean(df, path, n, color=cm.hsv, save=True):
-    plt.figure()
-    plt.title('%s/meanvector' % path)
-    test_arr = []
-    for i in range(n):
-        test, = plt.plot(df['evals'], df['m%d' % i], color=color(float(i)/n), \
-                         label='m%d' % i)
-        # test, = df.plot(kind='line', x='evals', y='m%d' % i, color=color(float(i)/n), \
-        #                  label='m%d' % i)
-        test_arr.append(test)
-
-    # plt.legend(handles=test_arr)
-    plt.xlabel('# evaluations')
-    plt.ylabel('position of mean vector')
-    plt.xlim([0, params['graph_end']])
-
-    plt.ylim(-2, 2)
-    # plt.ylim(-2, 50)
-    plt.grid()
-    plt.minorticks_on()
-    if save:
-        plt.savefig('%s/mean.png' % path)
-        # plt.savefig('%s/mean.pdf' % path)
-        plt.close()
-    else:
-        plt.show()
 
 def plot_eig(df, path, n, color=cm.hsv, save=True):
     plt.figure()
-    plt.title('%s/d' % path)
     for i in range(n):
         plt.plot(df['evals'], df['eig%d' % i], color=color(float(i)/n), \
                  label='eig%d' % i)
@@ -85,7 +57,6 @@ def plot_eig(df, path, n, color=cm.hsv, save=True):
 
 def plot_stepsize(df, path, save=True):
     plt.figure()
-    plt.title('%s/stepsize' % path)
     plt.plot(df['evals'], df['stepsize'])
     plt.xlim([0, params['graph_end']])
 
@@ -98,7 +69,7 @@ def plot_stepsize(df, path, save=True):
     plt.minorticks_on()
     if save:
         plt.savefig('%s/stepsize.png' % path)
-        # plt.savefig('%s/stepsize.pdf' % path)
+        plt.savefig('%s/stepsize.pdf' % path)
         plt.close()
     else:
         plt.show()
@@ -138,7 +109,7 @@ def plot_fval_and_eig(df, path, n, save=True):
 
     if save:
         plt.savefig('%s/eval_and_eig.pdf' % path)
-        # plt.savefig('%s/eval_and_eig.png' % path)
+        plt.savefig('%s/eval_and_eig.png' % path)
         plt.close()
     else:
         plt.show()
@@ -179,10 +150,8 @@ def plot_fval_and_sigma(df, path, n, save=True):
     else:
         plt.show()
 
-# TODO: log(m)
 def plot_log_mean(df, path, n, color=cm.hsv, save=True):
     plt.figure()
-    plt.title('%s/meanvector' % path)
     test_arr = []
     for i in range(n):
         test, = plt.plot(df['evals'], df['m%d' % i], color=color(float(i)/n), \
@@ -193,7 +162,7 @@ def plot_log_mean(df, path, n, color=cm.hsv, save=True):
 
     # plt.legend(handles=test_arr)
     plt.xlabel('# evaluations')
-    plt.ylabel('(log) position of mean vector')
+    plt.ylabel('mean vector')
     plt.yscale('log')
     plt.xlim([0, params['graph_end']])
 
@@ -203,7 +172,7 @@ def plot_log_mean(df, path, n, color=cm.hsv, save=True):
     plt.minorticks_on()
     if save:
         plt.savefig('%s/log_mean.png' % path)
-        # plt.savefig('%s/mean.pdf' % path)
+        plt.savefig('%s/log_mean.pdf' % path)
         plt.close()
     else:
         plt.show()
@@ -213,7 +182,6 @@ def plot_log_mean(df, path, n, color=cm.hsv, save=True):
 # TODO: |p_sigma|
 def plot_norm_ps(df, path, dim, save=True):
     plt.figure()
-    plt.title('%s/norm_ps' % path)
     df.plot(kind='line', x='evals', y='norm_ps')
     plt.xlim([0, params['graph_end']])
 
@@ -241,7 +209,7 @@ def plot_norm_ps(df, path, dim, save=True):
             return search_phase['conv']
 
     df['search_phase'] = df['norm_ps'].map(lambda norm_ps: judge_search_phase(norm_ps))
-    c_list = ["blue", "red", "green"]
+    c_list = ["red", "green", "blue"]
     for i in range(len(df['search_phase'])):
         plt.axvline(x=df['evals'][i],
                     color= c_list[df['search_phase'][i]],
@@ -249,7 +217,7 @@ def plot_norm_ps(df, path, dim, save=True):
 
     if save:
         plt.savefig('%s/norm_ps.png' % path)
-        # plt.savefig('%s/eval.pdf' % path)
+        plt.savefig('%s/norm_ps.pdf' % path)
         plt.close()
     else:
         plt.show()
@@ -258,7 +226,6 @@ def plot_norm_ps(df, path, dim, save=True):
 # TODO: ratio of feasible solutions
 def plot_ratio_of_feasible(df, path, dim, save=True):
     plt.figure()
-    plt.title('%s/ratio of feasible' % path)
     plt.plot(df['evals'], df['ratio_feasible'])
     plt.xlim([0, params['graph_end']])
     plt.ylim([0.0, 1.0])
@@ -271,8 +238,8 @@ def plot_ratio_of_feasible(df, path, dim, save=True):
     plt.minorticks_on()
 
     if save:
-        plt.savefig('%s/ratio_feasible.png' % path)
-        # plt.savefig('%s/eval.pdf' % path)
+        plt.savefig('%s/ratio_of_feasible.png' % path)
+        plt.savefig('%s/ratio_of_feasible.pdf' % path)
         plt.close()
     else:
         plt.show()
@@ -280,14 +247,13 @@ def plot_ratio_of_feasible(df, path, dim, save=True):
 # TODO: normalized eigenvalues
 def plot_eig_normalized(df, path, n, color=cm.hsv, save=True):
     plt.figure()
-    plt.title('%s/d' % path)
     maximum_eigs = np.maximum.reduce([df['eig%d' % i] for i in range(n)])
     for i in range(n):
         df['eig_normalized'] = df['eig%d' % i] / maximum_eigs
-        plt.plot(df['evals'], df['eig_normalized'], color=color(float(i)/n), \
+        plt.plot(df['evals'], df['eig_normalized'], color='red', \
                  label='eig_normalized%d' % i)
     plt.xlabel('# evaluations')
-    plt.ylabel('eigenvalues')
+    plt.ylabel('sqrt of eigenvalues / max(sqrt of eigenvalues)')
     plt.xlim([0, params['graph_end']])
 
     plt.ylim([1e-4, 5])
@@ -296,6 +262,7 @@ def plot_eig_normalized(df, path, n, color=cm.hsv, save=True):
     plt.minorticks_on()
     if save:
         plt.savefig('%s/eig_normalized.png' % path)
+        plt.savefig('%s/eig_normalized.pdf' % path)
         plt.close()
     else:
         plt.show()
@@ -303,7 +270,6 @@ def plot_eig_normalized(df, path, n, color=cm.hsv, save=True):
 # TODO: gamma
 def plot_gamma(df, path, save=True):
     plt.figure()
-    plt.title('%s/gamma' % path)
     plt.plot(df['evals'], df['gamma'])
     plt.xlim([0, params['graph_end']])
     # plt.ylim([0.0, 1.0])
@@ -324,29 +290,34 @@ def plot_gamma(df, path, save=True):
 
 
 # https://karaage.hatenadiary.jp/entry/2016/01/29/073000
-# def concat_plot(path):
-#     # fval_and_eig
-#     fval_and_eig = cv2.imread('{}/')
-# img2 = cv2.imread('image-2.jpg')
-# img3 = cv2.imread('image-3.jpg')
-# img4 = cv2.imread('image-4.jpg')
-#
-# img5 = cv2.vconcat([img1, img2])
-# img6 = cv2.vconcat([img3, img4])
-# img7 = cv2.hconcat([img5, img6])
-
-
+def concat_plot(path):
+    # fval_and_eig
+    fval_and_eig = cv2.imread('%s/eval_and_eig.png' % path)
 
     # log(m)
+    log_mean = cv2.imread('%s/log_mean.png' % path)
 
     # eig_normalized
+    eig_normalized = cv2.imread('%s/eig_normalized.png' % path)
 
     # stepsize
+    stepsize = cv2.imread('%s/stepsize.png' % path)
 
     # norm(ps)
+    norm_ps = cv2.imread('%s/norm_ps.png' % path)
 
     # ratio of feasible
+    ratio_of_feasible = cv2.imread('%s/ratio_of_feasible.png' % path)
 
+    # concat
+    img1 = cv2.hconcat([fval_and_eig, log_mean])
+    img2 = cv2.hconcat([eig_normalized, stepsize])
+    img3 = cv2.hconcat([norm_ps, ratio_of_feasible])
+
+    img4 = cv2.vconcat([img1, img2])
+    img5 = cv2.vconcat([img4, img3])
+    cv2.imwrite('%s/output.jpg' % path, img5)
+    return
 
 
 df = pd.read_csv('log.csv')
@@ -354,13 +325,12 @@ path = 'log/' + datetime.datetime.now().strftime('%Y-%m-%d-%H-%M')
 if not os.path.isdir(path):
     os.makedirs(path)
 
-print(df.head(3))
 
 df=df.astype(float)
 plot_fval(df, path)
-plot_mean(df, path, dim)
+# plot_mean(df, path, dim)
 plot_log_mean(df, path, dim)
-plot_eig(df, path, dim)
+# plot_eig(df, path, dim)
 plot_stepsize(df, path)
 plot_fval_and_eig(df, path, dim)
 plot_fval_and_sigma(df, path, dim)
@@ -368,5 +338,7 @@ plot_norm_ps(df, path, dim)
 plot_ratio_of_feasible(df, path, dim)
 plot_eig_normalized(df, path, dim)
 plot_gamma(df, path)
+# concat
+concat_plot(path)
 
 print("finish!")

@@ -12,7 +12,7 @@ import cv2
 params = {}
 dim = 40
 # params['graph_end'] = 240000
-params['graph_end'] = 250000
+params['graph_end'] = 90000
 
 def plot_fval(df, path, save=True):
     plt.figure()
@@ -178,6 +178,32 @@ def plot_log_mean(df, path, n, color=cm.hsv, save=True):
         plt.show()
 
 
+def plot_mean(df, path, n, color=cm.hsv, save=True):
+    plt.figure()
+    test_arr = []
+    for i in range(n):
+        test, = plt.plot(df['evals'], df['m%d' % i], color=color(float(i)/n), \
+                         label='m%d' % i)
+        # test, = df.plot(kind='line', x='evals', y='m%d' % i, color=color(float(i)/n), \
+        #                  label='m%d' % i)
+        test_arr.append(test)
+
+    # plt.legend(handles=test_arr)
+    plt.xlabel('# evaluations')
+    plt.ylabel('mean vector')
+    plt.xlim([0, params['graph_end']])
+
+    plt.ylim(-1, 11)
+    # plt.ylim(-2, 50)
+    plt.grid()
+    plt.minorticks_on()
+    if save:
+        plt.savefig('%s/mean.png' % path)
+        plt.savefig('%s/mean.pdf' % path)
+        plt.close()
+    else:
+        plt.show()
+
 
 # TODO: |p_sigma|
 def plot_norm_ps(df, path, dim, save=True):
@@ -328,7 +354,7 @@ if not os.path.isdir(path):
 
 df=df.astype(float)
 plot_fval(df, path)
-# plot_mean(df, path, dim)
+plot_mean(df, path, dim)
 plot_log_mean(df, path, dim)
 # plot_eig(df, path, dim)
 plot_stepsize(df, path)

@@ -26,7 +26,7 @@ def get_h_inv(dim):
     f = lambda a,b: ((1. + a*a)*math.exp(a*a/2.) / 0.24) - 10. - dim
     fprime = lambda a: (1. / 0.24) * a * math.exp(a*a/2.) * (3. + a*a)
     h_inv = 5.0
-    while (abs(f(h_inv, dim)) > 1e-10):
+    while abs(f(h_inv, dim)) > 1e-10:
         h_inv = h_inv - 0.5 * (f(h_inv, dim) / fprime(h_inv))
     return h_inv
 
@@ -150,7 +150,7 @@ def main(path, **params):
         lambF = len([solutions[i].x for i in range(lamb) if solutions[i].f < sys.maxsize])
 
         # log generation
-        print("ratio:{}".format(lambF/lamb))
+        # print("ratio:{}".format(lambF/lamb))
         log_generation(log, dim, g, evals, best, m, sigma, B, ps, lambF/lamb, gamma)
 
         # evolution path p_sigma
@@ -173,7 +173,9 @@ def main(path, **params):
         G_B = G_M - G_sigma * np.eye(dim)
 
         eta_m = 1.0 if ps_init_flag else 0.0
-        m += eta_m * sigma * np.dot(B, G_delta)
+        if evals > 20000:
+            m += eta_m * sigma * np.dot(B, G_delta)
+
         pc = (1.-cc) * pc + np.sqrt(cc * (2.-cc) * mueff) * B.dot(G_delta)
         if ps_init_flag is False and np.linalg.norm(ps) >= chiN:
             print("flag changed!")
